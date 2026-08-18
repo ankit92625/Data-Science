@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Data Science Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Kalam:wght@300;400;700&family=Patrick+Hand&family=Shadows+Into+Light&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #fbf7ec;
+    --paper2: #f6f0e0;
+    --line: #b9c9e8;
+    --margin-red: #d98a8a;
+    --ink: #2b3a67;
+    --ink2: #1f2a4a;
+    --pencil: #4a4a4a;
+    --highlight: #fff29e;
+    --highlight2: #ffd6e0;
+    --tab-1: #e07a5f;
+    --tab-2: #81b29a;
+    --tab-3: #6d8fd1;
+    --cork: #c9a876;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: #d9d2bd;
+    background-image:
+      radial-gradient(circle at 10% 10%, rgba(255,255,255,0.15), transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(0,0,0,0.06), transparent 40%);
+    font-family: 'Patrick Hand', cursive;
+    color: var(--ink2);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding: 24px 12px 60px;
+  }
+
+  .desk{
+    width:100%;
+    max-width: 920px;
+  }
+
+  .header{
+    text-align:center;
+    margin-bottom: 14px;
+    transform: rotate(-0.4deg);
+  }
+  .header h1{
+    font-family:'Caveat', cursive;
+    font-weight:700;
+    font-size: 3.1rem;
+    color: var(--ink);
+    margin: 0;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.05);
+  }
+  .header .sub{
+    font-family:'Shadows Into Light', cursive;
+    font-size: 1.15rem;
+    color: var(--pencil);
+    margin-top: -6px;
+  }
+  .header .doodle-underline{
+    width: 260px;
+    height: 14px;
+    margin: 2px auto 0;
+    display:block;
+  }
+
+  /* Tabs like notebook dividers */
+  .tabs{
+    display:flex;
+    gap: 8px;
+    justify-content:center;
+    margin-bottom: -2px;
+    position:relative;
+    z-index: 2;
+    flex-wrap: wrap;
+  }
+  .tab{
+    font-family:'Caveat', cursive;
+    font-weight:700;
+    font-size: 1.3rem;
+    padding: 10px 22px 14px;
+    border-radius: 10px 10px 0 0;
+    cursor:pointer;
+    border: 2px solid rgba(0,0,0,0.15);
+    border-bottom: none;
+    color: #fff;
+    transform: rotate(-1deg) translateY(4px);
+    transition: transform .15s ease, opacity .15s ease;
+    opacity: 0.72;
+    box-shadow: 1px -1px 3px rgba(0,0,0,0.15);
+    user-select:none;
+  }
+  .tab:nth-child(2){ transform: rotate(0.8deg) translateY(4px); }
+  .tab:nth-child(3){ transform: rotate(-0.5deg) translateY(4px); }
+  .tab[data-unit="1"]{ background: var(--tab-1); }
+  .tab[data-unit="2"]{ background: var(--tab-2); }
+  .tab[data-unit="3"]{ background: var(--tab-3); }
+  .tab.active{
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1.03);
+    box-shadow: 1px -2px 6px rgba(0,0,0,0.25);
+  }
+
+  .notebook{
+    background: var(--paper);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 33px,
+      var(--line) 34px
+    );
+    background-position: 0 90px;
+    border-radius: 4px 14px 14px 14px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.28), 0 2px 0 rgba(255,255,255,0.4) inset;
+    position: relative;
+    padding: 34px 26px 34px 70px;
+    min-height: 640px;
+    overflow: hidden;
+  }
+  /* red margin line */
+  .notebook::before{
+    content:"";
+    position:absolute;
+    top:0; bottom:0;
+    left: 46px;
+    width: 2px;
+    background: var(--margin-red);
+    opacity: 0.55;
+  }
+  /* spiral binding */
+  .spiral{
+    position:absolute;
+    left: -14px;
+    top: 26px;
+    bottom: 26px;
+    width: 30px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    z-index:3;
+  }
+  .spiral span{
+    display:block;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 4px solid #9a9a9a;
+    background: radial-gradient(circle at 35% 30%, #eee, #999 70%);
+    box-shadow: 2px 2px 3px rgba(0,0,0,0.3);
+  }
+
+  .page{ display:none; animation: fadeIn .35s ease; }
+  .page.active{ display:block; }
+  @keyframes fadeIn{ from{opacity:0; transform: translateY(6px);} to{opacity:1; transform:none;} }
+
+  .unit-title{
+    font-family:'Caveat', cursive;
+    font-weight:700;
+    font-size: 2.3rem;
+    margin: 0 0 2px;
+    display:inline-block;
+    position:relative;
+  }
+  .unit-title.u1{ color: var(--tab-1); }
+  .unit-title.u2{ color: var(--tab-2); }
+  .unit-title.u3{ color: var(--tab-3); }
+  .unit-by{
+    font-family:'Shadows Into Light', cursive;
+    color: var(--pencil);
+    font-size: 1rem;
+    margin-bottom: 16px;
+  }
+
+  h2.sec{
+    font-family:'Caveat', cursive;
+    font-weight:700;
+    font-size: 1.7rem;
+    color: var(--ink);
+    margin: 22px 0 4px;
+    border-bottom: 2px dashed rgba(43,58,103,0.35);
+    display:inline-block;
+    padding-right: 10px;
+  }
+  h3.sub{
+    font-family:'Kalam', cursive;
+    font-weight:700;
+    font-size: 1.15rem;
+    color: var(--ink2);
+    margin: 14px 0 4px;
+  }
+  p, li{
+    font-size: 1.15rem;
+    line-height: 1.55;
+    color: #2a2a2a;
+  }
+  ul{ margin: 4px 0 8px 22px; padding:0; }
+  li{ margin-bottom: 3px; }
+  li::marker{ color: var(--ink); }
+
+  .hl{
+    background: linear-gradient(120deg, var(--highlight) 0%, var(--highlight) 100%);
+    background-repeat: no-repeat;
+    background-size: 100% 55%;
+    background-position: 0 65%;
+    padding: 0 2px;
+  }
+  .hl2{
+    background: linear-gradient(120deg, var(--highlight2) 0%, var(--highlight2) 100%);
+    background-repeat: no-repeat;
+    background-size: 100% 55%;
+    background-position: 0 65%;
+    padding: 0 2px;
+  }
+  .box{
+    border: 2.5px solid var(--ink);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin: 10px 0;
+    display:inline-block;
+    transform: rotate(-0.4deg);
+    background: rgba(255,255,255,0.35);
+  }
+  .box.round{ border-style: solid; border-radius: 40px; }
+
+  .sticky{
+    display:inline-block;
+    background: #fff3a8;
+    padding: 10px 14px;
+    margin: 10px 6px 10px 0;
+    box-shadow: 3px 3px 8px rgba(0,0,0,0.25);
+    transform: rotate(-2deg);
+    font-family:'Kalam', cursive;
+    font-size: 1rem;
+    max-width: 230px;
+    vertical-align: top;
+  }
+  .sticky.pink{ background: #ffd6e0; transform: rotate(2deg); }
+  .sticky.green{ background: #d7f0d0; transform: rotate(-1.5deg); }
+
+  .arrow-note{
+    font-family:'Shadows Into Light', cursive;
+    color: #b23a3a;
+    font-size: 1.05rem;
+  }
+
+  table.hand{
+    border-collapse: collapse;
+    margin: 10px 0 16px;
+    font-family:'Kalam', cursive;
+    font-size: 1.05rem;
+    width: 100%;
+  }
+  table.hand th, table.hand td{
+    border: 2px solid var(--ink2);
+    padding: 6px 10px;
+    text-align:left;
+  }
+  table.hand th{
+    background: var(--highlight);
+  }
+  table.hand tr:nth-child(even) td{ background: rgba(255,255,255,0.3); }
+
+  .flow{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 6px;
+    align-items:center;
+    margin: 10px 0 18px;
+    font-family:'Kalam', cursive;
+  }
+  .flow .step{
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-weight:700;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+  }
+  .flow .step.o1{ border-color: #d98a44; }
+  .flow .step.o2{ border-color: #4aa3a3; }
+  .flow .step.o3{ border-color: #7a6fd1; }
+  .flow .step.o4{ border-color: #c14f6e; }
+  .flow .step.o5{ border-color: #4f9d4f; }
+  .flow .arrow{ font-size: 1.3rem; color: var(--pencil); }
+
+  .cols{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 640px){
+    .cols{ grid-template-columns: 1fr; }
+    .notebook{ padding: 28px 16px 28px 52px; }
+    .notebook::before{ left: 32px; }
+    .header h1{ font-size: 2.4rem; }
+  }
+
+  .doodle{ opacity:0.85; }
+
+  footer.note{
+    text-align:center;
+    font-family:'Shadows Into Light', cursive;
+    color: #6a6250;
+    margin-top: 18px;
+    font-size: 1rem;
+  }
+
+  .circle-star{
+    color:#b23a3a;
+    font-family:'Kalam',cursive;
+    font-weight:700;
+  }
+
+  .quiz-btn{
+    font-family:'Caveat', cursive;
+    font-weight:700;
+    font-size:1.1rem;
+    background: var(--ink);
+    color:#fff;
+    border:none;
+    padding:8px 18px;
+    border-radius: 20px;
+    cursor:pointer;
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.25);
+    margin-top: 6px;
+  }
+  .quiz-btn:hover{ filter: brightness(1.1); }
+</style>
+</head>
+<body>
+<div class="desk">
+
+  <div class="header">
+    <h1>My Data Science Notebook ✏️</h1>
+    <div class="sub">~ scribbled notes from lecture, don't lose this! ~</div>
+    <svg class="doodle-underline" viewBox="0 0 260 14"><path d="M2 8 C 60 2, 120 14, 180 6 S 240 2, 258 8" stroke="#d98a8a" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-unit="1">Unit 1 · Intro to DS</div>
+    <div class="tab" data-unit="2">Unit 2 · Preprocessing</div>
+    <div class="tab" data-unit="3">Unit 3 · Concept Learning</div>
+  </div>
+
+  <div class="notebook">
+    <div class="spiral" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span>
+    </div>
+
+    <!-- ===================== UNIT 1 ===================== -->
+    <section class="page active" id="page-1">
+      <div class="unit-title u1">Unit 1 — Intro to Data Science</div>
+      <div class="unit-by">by Mrs. Arnika Patel</div>
+
+      <h2 class="sec">💡 What is Data Science?</h2>
+      <p>An <span class="hl">interdisciplinary field</span> — stats + algorithms + computing — used to dig knowledge & insights out of data (structured AND messy/unstructured).</p>
+
+      <div class="cols">
+        <div>
+          <h3 class="sub">Goals:</h3>
+          <ul>
+            <li>find hidden patterns</li>
+            <li>help decisions get made</li>
+            <li>predict what happens next</li>
+            <li>automate stuff w/ ML</li>
+            <li>= $$ business value</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="sub">Used in:</h3>
+          <ul>
+            <li>🏥 healthcare (disease predict)</li>
+            <li>💰 finance (catch fraud)</li>
+            <li>🛒 e-commerce (recs)</li>
+            <li>📱 social media analytics</li>
+            <li>⛅ weather + smart cities</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2 class="sec">🌐 The Digital Universe</h2>
+      <p>= <span class="hl2">all the data</span> being generated worldwide, all the time, from everything.</p>
+      <p class="arrow-note">→ social posts, emails, videos, IoT sensors, transactions, apps... it never stops!</p>
+
+      <h3 class="sub">the famous 5 V's</h3>
+      <div class="flow">
+        <div class="step o1">Volume</div><span class="arrow">·</span>
+        <div class="step o2">Variety</div><span class="arrow">·</span>
+        <div class="step o3">Velocity</div><span class="arrow">·</span>
+        <div class="step o4">Veracity</div><span class="arrow">·</span>
+        <div class="step o5">Value</div>
+      </div>
+      <p style="margin-top:-6px">(volume=how much, variety=what kinds, velocity=how fast, veracity=how accurate, value=is it useful)</p>
+
+      <h2 class="sec">📂 Types of Data</h2>
+      <table class="hand">
+        <tr><th>Type</th><th>What it looks like</th></tr>
+        <tr><td><b>Structured</b></td><td>databases (MySQL/Mongo), spreadsheets (CSV/Excel)</td></tr>
+        <tr><td><b>Unstructured</b></td><td>plain text, JSON/XML, images, audio, video</td></tr>
+        <tr><td><b>Semi-structured</b></td><td>logs, HTML/web scrapes, APIs, streaming (Kafka, MQTT)</td></tr>
+      </table>
+
+      <h2 class="sec">📍 Sources of Data</h2>
+      <div class="cols">
+        <div>
+          <p><b>Internal</b> — sales records, employee DBs, customer info, inventory</p>
+          <p><b>External</b> — gov't data, research papers, open data portals, market reports</p>
+        </div>
+        <div>
+          <p><b>Machine-gen'd</b> — IoT sensors, smart devices, GPS, server logs</p>
+          <p><b>Human-gen'd</b> — social posts, surveys, emails/docs</p>
+        </div>
+      </div>
+
+      <h2 class="sec">🏛️ Information Commons</h2>
+      <p>a shared space (physical or digital) where info + tech + services are open for everyone to learn/research/collaborate.</p>
+      <div class="sticky">e.g. digital libraries, open data portals, academic repositories<br>→ easy access = more research + better decisions!</div>
+
+      <h2 class="sec">🔄 Data Science Project Life Cycle</h2>
+      <div class="flow">
+        <div class="step o1">Business Understanding</div><span class="arrow">→</span>
+        <div class="step o2">Data Understanding</div><span class="arrow">→</span>
+        <div class="step o3">Data Prep</div><span class="arrow">→</span>
+        <div class="step o4">EDA</div><span class="arrow">→</span>
+        <div class="step o5">Model → Evaluate → Deploy</div>
+      </div>
+
+      <h2 class="sec">⭐ OSEMN Framework <span class="circle-star">(remember this!!)</span></h2>
+      <p>the classic 5-step recipe for any DS project:</p>
+      <table class="hand">
+        <tr><th>Letter</th><th>Stage</th><th>Output</th></tr>
+        <tr><td><b>O</b></td><td>Obtain — collect from DBs/APIs/scraping</td><td>Raw Data</td></tr>
+        <tr><td><b>S</b></td><td>Scrub — clean, remove dupes, fix errors</td><td>Clean Data</td></tr>
+        <tr><td><b>E</b></td><td>Explore — stats + visualize + find patterns</td><td>Insights</td></tr>
+        <tr><td><b>M</b></td><td>Model — ML, regression, classification, clustering</td><td>Trained Model</td></tr>
+        <tr><td><b>N</b></td><td>iNterpret — reports, dashboards, recommendations</td><td>Actionable Insights</td></tr>
+      </table>
+      <div class="box">O-S-E-M-N = Obtain → Scrub → Explore → Model → iNterpret</div>
+
+      <h2 class="sec">🧩 More on Information Commons</h2>
+      <p>Think of it as a "shared toolbox" a university/org gives everyone so nobody has to start from scratch.</p>
+      <h3 class="sub">Components:</h3>
+      <div class="cols">
+        <div>
+          <ul>
+            <li>data repositories</li>
+            <li>cloud + computing resources</li>
+            <li>collaborative workspaces</li>
+          </ul>
+        </div>
+        <div>
+          <ul>
+            <li>software + visualization tools</li>
+            <li>knowledge repositories</li>
+            <li>training programs</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2 class="sec">🔬 Data Science Project Lifecycle — the details</h2>
+      <table class="hand">
+        <tr><th>Phase</th><th>What actually happens</th></tr>
+        <tr><td>Business Understanding</td><td>pin down the real problem, set goals, define "success" clearly</td></tr>
+        <tr><td>Data Understanding</td><td>collect + explore, check structure/quality of what you have</td></tr>
+        <tr><td>Data Preparation</td><td>handle missing values/outliers, clean it up (this = Unit 2!)</td></tr>
+        <tr><td>EDA</td><td>charts, graphs, spot patterns + relationships</td></tr>
+        <tr><td>Modeling</td><td>pick an algorithm, train it on prepped data</td></tr>
+        <tr><td>Evaluation</td><td>test accuracy + reliability before trusting it</td></tr>
+        <tr><td>Deployment</td><td>ship it into the real app, then monitor + improve over time</td></tr>
+      </table>
+      <p class="arrow-note">→ notice this lifecycle and OSEMN basically describe the SAME journey, just different wording!</p>
+
+      <h2 class="sec">📝 Unit 1 Quick Recap</h2>
+      <div class="sticky">Data Science = stats + code + domain knowledge → turn data into decisions</div>
+      <div class="sticky pink">5 V's: Volume, Variety, Velocity, Veracity, Value</div>
+      <div class="sticky green">OSEMN: Obtain → Scrub → Explore → Model → iNterpret</div>
+
+      <p style="text-align:center;margin-top:14px;">
+        <button class="quiz-btn" onclick="alert('Q1: What does the \'V\' in Veracity mean?\n\nA) Fast data\nB) Accuracy of data\nC) Amount of data\n\n✅ Answer: B - Accuracy of data!')">🧠 Quiz me on Unit 1!</button>
+      </p>
+
+      <h2 class="sec">🎓 Exam-Ready Definitions (learn these word-for-word!)</h2>
+      <table class="hand">
+        <tr><th>Term</th><th>One-line definition to write in exam</th></tr>
+        <tr><td>Data Science</td><td>An interdisciplinary field using scientific methods, statistics, algorithms & computing to extract knowledge/insights from data.</td></tr>
+        <tr><td>Digital Universe</td><td>The enormous, ever-growing collection of digital data generated worldwide from humans & machines.</td></tr>
+        <tr><td>Information Commons</td><td>A shared environment where info resources, tech & services are made accessible for learning, research & collaboration.</td></tr>
+        <tr><td>OSEMN</td><td>A 5-stage data science workflow: Obtain, Scrub, Explore, Model, iNterpret.</td></tr>
+        <tr><td>Structured Data</td><td>Data organized in a fixed schema/format (tables, rows, columns) e.g. relational DBs.</td></tr>
+        <tr><td>Unstructured Data</td><td>Data with no predefined format e.g. images, videos, free text.</td></tr>
+      </table>
+
+      <h2 class="sec">⚖️ Compare & Contrast (favorite exam question type!)</h2>
+      <table class="hand">
+        <tr><th>Structured vs Unstructured vs Semi-structured</th></tr>
+      </table>
+      <table class="hand">
+        <tr><th>Basis</th><th>Structured</th><th>Semi-Structured</th><th>Unstructured</th></tr>
+        <tr><td>Format</td><td>Fixed schema (rows/cols)</td><td>Partial/flexible structure</td><td>No fixed structure</td></tr>
+        <tr><td>Storage</td><td>RDBMS (MySQL)</td><td>NoSQL/logs/XML</td><td>File systems</td></tr>
+        <tr><td>Example</td><td>Excel sheet, SQL table</td><td>JSON, HTML, email headers</td><td>Images, audio, raw text</td></tr>
+        <tr><td>Ease of analysis</td><td>Easiest</td><td>Moderate</td><td>Hardest</td></tr>
+      </table>
+
+      <h2 class="sec">💯 Important Exam Questions — Unit 1</h2>
+      <div class="box">
+        <b>2-mark questions:</b>
+        <ul>
+          <li>Define Data Science with its objectives.</li>
+          <li>What is the Digital Universe? List its characteristics.</li>
+          <li>Define Information Commons.</li>
+          <li>Expand OSEMN.</li>
+          <li>List any 4 sources of data.</li>
+        </ul>
+      </div>
+      <div class="box">
+        <b>5/7-mark questions:</b>
+        <ul>
+          <li>Explain the 5 V's of Digital Universe with examples.</li>
+          <li>Explain the OSEMN framework in detail with the output of each stage.</li>
+          <li>Describe the Data Science Project Life Cycle with a diagram.</li>
+          <li>Explain types of data (structured/semi-structured/unstructured) with examples.</li>
+          <li>Explain internal, external, machine-generated & human-generated data sources.</li>
+          <li>What is Information Commons? Explain its features, components & benefits.</li>
+        </ul>
+      </div>
+
+      <h2 class="sec">🧠 Mnemonic to remember OSEMN</h2>
+      <div class="sticky pink">"<b>O</b>nly <b>S</b>mart <b>E</b>lephants <b>M</b>ake <b>N</b>oodles" 🐘🍜<br>Obtain → Scrub → Explore → Model → iNterpret</div>
+      <div class="sticky">5 V's mnemonic: "Very Very Valuable Verified Value" — Volume, Variety, Velocity, Veracity, Value</div>
+
+    </section>
+
+    <!-- ===================== UNIT 2 ===================== -->
+    <section class="page" id="page-2">
+      <div class="unit-title u2">Unit 2 — Data Preprocessing</div>
+      <div class="unit-by">by Pallavi Sakalley</div>
+
+      <h2 class="sec">🧹 Why Preprocess?</h2>
+      <p>Raw data is messy! Preprocessing = turning it into something a computer/model can actually use <i>efficiently &amp; accurately</i>. Fixes inconsistent formats, human errors, missing bits.</p>
+
+      <h3 class="sub">Good data needs (5 factors):</h3>
+      <ul>
+        <li><span class="hl">Accuracy</span> — is it actually correct?</li>
+        <li><span class="hl">Consistency</span> — same answer every time</li>
+        <li><span class="hl">Completeness</span> — no missing fields</li>
+        <li><span class="hl">Validity</span> — right format/range/type</li>
+        <li><span class="hl">Timeliness</span> — updated when the event happens</li>
+      </ul>
+
+      <h2 class="sec">🛠️ The 4 Big Steps</h2>
+      <div class="flow">
+        <div class="step o1">Data Cleaning</div><span class="arrow">→</span>
+        <div class="step o2">Data Integration</div><span class="arrow">→</span>
+        <div class="step o3">Data Reduction</div><span class="arrow">→</span>
+        <div class="step o4">Data Transformation</div>
+      </div>
+
+      <div class="cols">
+        <div>
+          <h3 class="sub">Cleaning</h3>
+          <p>fix incorrect/incomplete/missing values → handle missing values, de-noise</p>
+          <h3 class="sub">Integration</h3>
+          <p>combine data from many sources → entity ID problem, schema integration, resolving conflicts</p>
+        </div>
+        <div>
+          <h3 class="sub">Reduction</h3>
+          <p>shrink data size (save $ + storage) → dimensionality reduction, numerosity reduction, compression (lossy/lossless)</p>
+          <h3 class="sub">Transformation</h3>
+          <p>reshape data for ML → <b>smoothing</b> (remove noise), <b>aggregation</b> (summarize e.g. daily→monthly), <b>discretization</b> (numbers→bins e.g. age→"young/old"), <b>normalization</b> (scale to [0,1] etc.)</p>
+        </div>
+      </div>
+
+      <div class="sticky pink">💭 remember: normalization = squish numbers into a standard range so no one feature "dominates" the model!</div>
+
+      <h2 class="sec">📥 Reading &amp; Selecting Data</h2>
+      <p><b>Reading data</b> = importing/loading it into your DS environment — the foundation everything else is built on. (same 3 types as unit 1: structured / unstructured / semi-structured)</p>
+      <p><b>Selecting data</b> = picking the <i>relevant subset</i> you actually need. Key things to check:</p>
+      <ul>
+        <li>Relevance — does it relate to the question?</li>
+        <li>Validity, Completeness, Quality</li>
+        <li>Dimensionality — too many features = trouble</li>
+        <li>Balance — represent all classes fairly</li>
+        <li>Size vs. compute cost tradeoff</li>
+      </ul>
+
+      <h2 class="sec">🔍 Filtering Data</h2>
+      <p>Keep only the rows/values that meet a condition — cuts noise, focuses the analysis.</p>
+      <div class="cols">
+        <div>
+          <ul>
+            <li>by condition: numerical / text / categorical</li>
+            <li>by rows or columns</li>
+          </ul>
+        </div>
+        <div>
+          <ul>
+            <li>by data quality</li>
+            <li>by time</li>
+          </ul>
+        </div>
+      </div>
+      <h3 class="sub">Filtering missing values (super common!):</h3>
+      <div class="box round">Remove &nbsp;|&nbsp; Impute (mean/median/mode) &nbsp;|&nbsp; Interpolate (for time series)</div>
+
+      <h2 class="sec">✋ Manipulating Data</h2>
+      <p>cleaning + reshaping + aggregating + merging, all rolled together.</p>
+      <ul>
+        <li><b>Cleaning</b> — drop_duplicates(), regex for text errors</li>
+        <li><b>Transformation</b> — scaling/normalizing, label encoding, one-hot encoding</li>
+        <li><b>Aggregation</b> — group + summarize stats</li>
+        <li><b>Feature engineering</b> — build new useful features</li>
+      </ul>
+
+      <h2 class="sec">↕️ Sorting, Grouping, Ranking</h2>
+      <table class="hand">
+        <tr><th>Op</th><th>What it does</th></tr>
+        <tr><td>Sorting</td><td>arrange asc/desc by 1+ columns (single or multi-level)</td></tr>
+        <tr><td>Grouping</td><td>bucket rows + aggregate → find patterns/trends</td></tr>
+        <tr><td>Rearranging</td><td>reshape/wrangle overall — clean+reshape+subset+sort+merge+group+engineer</td></tr>
+        <tr><td>Ranking</td><td>assign order by criteria — simple, percentile, weighted, time-series, tie-break</td></tr>
+      </table>
+
+      <div class="sticky green">basically Unit 2 = "get the data ready before you dare touch a model" 🧽</div>
+
+      <h2 class="sec">🧮 Normalization — the actual formulas</h2>
+      <table class="hand">
+        <tr><th>Method</th><th>Formula</th><th>Result range</th></tr>
+        <tr><td>Min-Max</td><td>x' = (x − min) / (max − min)</td><td>[0, 1]</td></tr>
+        <tr><td>Standardization (Z-score)</td><td>x' = (x − mean) / std_dev</td><td>mean 0, unit variance</td></tr>
+      </table>
+      <p class="arrow-note">→ use Min-Max when you know the bounds; use Z-score when data has outliers/is roughly normal.</p>
+
+      <h2 class="sec">🗂️ Data Reduction — a closer look</h2>
+      <ul>
+        <li><b>Dimensionality Reduction</b> — drop/combine less-useful features (e.g. PCA) so models train faster + avoid the "curse of dimensionality"</li>
+        <li><b>Numerosity Reduction</b> — represent data with a smaller model or sample instead of the full set (e.g. regression models, histograms, clustering)</li>
+        <li><b>Data Compression</b> — lossless (nothing lost, e.g. ZIP) vs lossy (some detail lost but way smaller, e.g. JPEG)</li>
+      </ul>
+
+      <h2 class="sec">🔗 Data Integration — the 3 headaches</h2>
+      <table class="hand">
+        <tr><th>Problem</th><th>What it means</th></tr>
+        <tr><td>Entity Identification</td><td>is "Cust_ID" in DB-1 the same as "CustomerNo" in DB-2? matching real-world entities across sources</td></tr>
+        <tr><td>Schema Integration</td><td>merging different table structures/column layouts into one consistent schema</td></tr>
+        <tr><td>Detecting & Resolving Conflicts</td><td>same attribute, different values/units (e.g. price in $ vs ₹) — decide which is "true"</td></tr>
+      </table>
+
+      <h2 class="sec">↕️ Sorting / Grouping / Ranking — extra detail</h2>
+      <div class="cols">
+        <div>
+          <h3 class="sub">Sorting</h3>
+          <ul>
+            <li>Ordering — ascending or descending</li>
+            <li>Stability — equal keys keep their original order</li>
+            <li>Single vs Multi-column sorting</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="sub">Grouping</h3>
+          <ul>
+            <li>Group by a key (e.g. region)</li>
+            <li>Aggregate (sum, mean, count...)</li>
+            <li>Transform / filter within groups</li>
+          </ul>
+        </div>
+      </div>
+      <h3 class="sub">Ranking flavors</h3>
+      <div class="flow">
+        <div class="step o1">Simple Rank</div><span class="arrow">·</span>
+        <div class="step o2">Percentile Rank</div><span class="arrow">·</span>
+        <div class="step o3">Weighted Criteria</div><span class="arrow">·</span>
+        <div class="step o4">Time-Series Rank</div><span class="arrow">·</span>
+        <div class="step o5">Dynamic Rank</div>
+      </div>
+      <p>+ don't forget <b>tie-breaking</b> rules when two items rank equally!</p>
+
+      <h2 class="sec">📝 Unit 2 Quick Recap</h2>
+      <div class="sticky">4 big steps: Cleaning → Integration → Reduction → Transformation</div>
+      <div class="sticky pink">Missing values: Remove / Impute / Interpolate</div>
+      <div class="sticky green">Transformation: smoothing, aggregation, discretization, normalization</div>
+
+      <p style="text-align:center;margin-top:14px;">
+        <button class="quiz-btn" onclick="alert('Q1: Which technique converts continuous values into bins/intervals?\n\nA) Normalization\nB) Discretization\nC) Aggregation\n\n✅ Answer: B - Discretization!')">🧠 Quiz me on Unit 2!</button>
+      </p>
+
+      <h2 class="sec">🎓 Exam-Ready Definitions</h2>
+      <table class="hand">
+        <tr><th>Term</th><th>One-line definition</th></tr>
+        <tr><td>Data Preprocessing</td><td>Converting raw data into a clean, efficient format suitable for analysis/ML.</td></tr>
+        <tr><td>Data Cleaning</td><td>Technique to handle incorrect, incomplete, inconsistent, or missing values.</td></tr>
+        <tr><td>Data Integration</td><td>Combining data from multiple heterogeneous sources into one consistent view.</td></tr>
+        <tr><td>Data Reduction</td><td>Reducing volume of data while preserving analytical integrity, to save cost/storage.</td></tr>
+        <tr><td>Data Transformation</td><td>Converting data into a format that improves ML model efficiency (smoothing, aggregation, discretization, normalization).</td></tr>
+        <tr><td>Normalization</td><td>Scaling a numeric variable into a specified range like [0,1] or [-1,1].</td></tr>
+        <tr><td>Outlier</td><td>A data point that differs significantly from other observations in the dataset.</td></tr>
+      </table>
+
+      <h2 class="sec">⚖️ Compare & Contrast</h2>
+      <table class="hand">
+        <tr><th>Basis</th><th>Normalization</th><th>Standardization</th></tr>
+        <tr><td>Range</td><td>Fixed range e.g. [0,1]</td><td>Mean=0, SD=1 (no fixed bound)</td></tr>
+        <tr><td>Best for</td><td>Known min/max, no big outliers</td><td>Data with outliers / normal distribution</td></tr>
+        <tr><td>Formula</td><td>(x−min)/(max−min)</td><td>(x−mean)/std_dev</td></tr>
+      </table>
+      <table class="hand">
+        <tr><th>Basis</th><th>Data Cleaning</th><th>Data Transformation</th></tr>
+        <tr><td>Purpose</td><td>Fix errors/missing/duplicate data</td><td>Change format/scale of data</td></tr>
+        <tr><td>When used</td><td>Before analysis</td><td>Before modeling</td></tr>
+        <tr><td>Example</td><td>Removing duplicate rows</td><td>Scaling age to [0,1]</td></tr>
+      </table>
+
+      <h2 class="sec">🔑 Handling Missing Values — full detail (very important!)</h2>
+      <table class="hand">
+        <tr><th>Method</th><th>Description</th><th>When to use</th></tr>
+        <tr><td>Remove</td><td>Drop the row or column entirely</td><td>Very few missing values, large dataset</td></tr>
+        <tr><td>Impute (Mean)</td><td>Fill with average of the column</td><td>Numeric data, normally distributed</td></tr>
+        <tr><td>Impute (Median)</td><td>Fill with middle value</td><td>Numeric data with outliers</td></tr>
+        <tr><td>Impute (Mode)</td><td>Fill with most frequent value</td><td>Categorical data</td></tr>
+        <tr><td>Interpolate</td><td>Estimate value based on trend</td><td>Time series data</td></tr>
+      </table>
+
+      <h2 class="sec">💯 Important Exam Questions — Unit 2</h2>
+      <div class="box">
+        <b>2-mark questions:</b>
+        <ul>
+          <li>Define Data Preprocessing. Why is it needed?</li>
+          <li>List factors affecting data preprocessing.</li>
+          <li>What is Data Reduction? Name its techniques.</li>
+          <li>Differentiate Normalization and Standardization.</li>
+        </ul>
+      </div>
+      <div class="box">
+        <b>5/7-mark questions:</b>
+        <ul>
+          <li>Explain the steps of Data Preprocessing in detail (cleaning, integration, reduction, transformation).</li>
+          <li>Explain techniques for handling missing values with examples.</li>
+          <li>Explain Data Transformation techniques: smoothing, aggregation, discretization, normalization.</li>
+          <li>What is Data Integration? Explain the 3 problems faced (entity identification, schema integration, conflict resolution).</li>
+          <li>Explain sorting, grouping, ranking with key concepts of each.</li>
+          <li>Explain the difference between filtering, manipulating and rearranging data.</li>
+        </ul>
+      </div>
+
+      <h2 class="sec">🧠 Mnemonic to remember Preprocessing steps</h2>
+      <div class="sticky pink">"<b>C</b>lever <b>I</b>guanas <b>R</b>eally <b>T</b>ravel" 🦎<br>Cleaning → Integration → Reduction → Transformation</div>
+
+    </section>
+
+    <!-- ===================== UNIT 3 ===================== -->
+    <section class="page" id="page-3">
+      <div class="unit-title u3">Unit 3 — Concept Learning</div>
+      <div class="unit-by">by Ms. Shivangi B. Patel</div>
+
+      <h2 class="sec">🧠 What is Concept Learning?</h2>
+      <p>ML approach where the system learns a <span class="hl">concept</span> from examples, then decides if a NEW example belongs to that target class.</p>
+      <p class="arrow-note">→ classic example: "is this day good for playing tennis?" based on weather/temp/humidity/wind</p>
+
+      <table class="hand">
+        <tr><th>Term</th><th>Meaning</th></tr>
+        <tr><td>Instance</td><td>one input example</td></tr>
+        <tr><td>Attribute</td><td>a property of the data</td></tr>
+        <tr><td>Hypothesis</td><td>a possible rule describing the data</td></tr>
+        <tr><td>Target Concept</td><td>the actual thing being learned</td></tr>
+      </table>
+
+      <div class="cols">
+        <div>
+          <h3 class="sub">👍 Pros</h3>
+          <ul>
+            <li>learns straight from examples</li>
+            <li>better prediction accuracy</li>
+            <li>less manual rule-writing</li>
+            <li>generalizes to new cases</li>
+            <li>base of supervised learning</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="sub">👎 Cons</h3>
+          <ul>
+            <li>hates noisy data</li>
+            <li>hypothesis space explodes fast</li>
+            <li>can be $$$ computationally</li>
+            <li>needs labeled data</li>
+            <li>can overfit</li>
+            <li>struggles w/ continuous data</li>
+          </ul>
+        </div>
+      </div>
+      <p class="arrow-note">used for: spam filters, medical diagnosis, Netflix/Amazon recs, fraud detection, image/speech recognition...</p>
+
+      <h2 class="sec">❓ Hypothesis Basics</h2>
+      <p>a clear <i>testable</i> statement predicting a relationship btwn variables.</p>
+      <table class="hand">
+        <tr><th>Type</th><th>Example</th></tr>
+        <tr><td>Null (H₀)</td><td>"study hours don't affect marks"</td></tr>
+        <tr><td>Alternative (H₁)</td><td>"study hours improve marks"</td></tr>
+        <tr><td>Simple</td><td>"exercise reduces stress"</td></tr>
+        <tr><td>Complex</td><td>"diet + exercise improve health & productivity"</td></tr>
+      </table>
+      <p><b>steps:</b> identify problem → review literature → identify variables → find logical link → write clear testable statement</p>
+
+      <h2 class="sec">🎯 PAC Learning</h2>
+      <p><b>P</b>robably <b>A</b>pproximately <b>C</b>orrect — a framework for math-checking how good an ML algorithm's generalization is.</p>
+      <div class="box">Goal: with high probability ("Probably"), the learned hypothesis has low error ("Approximately Correct")</div>
+      <ul>
+        <li><b>ε (epsilon)</b> = max allowed error → Accuracy = 1 − ε</li>
+        <li><b>δ (delta)</b> = probability of failure → Confidence = 1 − δ</li>
+      </ul>
+      <p>formally: <span class="hl2">P( error(h) ≤ ε ) ≥ 1 − δ</span></p>
+      <p class="arrow-note">→ smaller ε &amp; δ = stricter requirement = harder to satisfy!</p>
+
+      <h2 class="sec">📐 VC Dimension</h2>
+      <p>measures how <i>complex/powerful</i> a model is — "max # of points a classifier can perfectly shatter" (get every possible labeling right).</p>
+      <table class="hand">
+        <tr><th>Model</th><th>VC Dim</th></tr>
+        <tr><td>Point classifier</td><td>1</td></tr>
+        <tr><td>Line in 2D</td><td>3</td></tr>
+        <tr><td>Circle in 2D</td><td>3</td></tr>
+        <tr><td>Neural nets</td><td>very high</td></tr>
+      </table>
+      <div class="sticky">high VC dim → overfitting risk 😬<br>low VC dim → underfitting risk 😴</div>
+
+      <h2 class="sec">🗑️ Hypothesis Elimination &amp; Version Space</h2>
+      <p>Start with ALL possible hypotheses (H) → toss out any that conflict w/ training data → keep only the consistent ones = <b>Version Space (VS)</b>.</p>
+      <div class="cols">
+        <div>
+          <p><b>S (Specific boundary)</b> — most specific hypothesis, covers only the positives seen so far</p>
+        </div>
+        <div>
+          <p><b>G (General boundary)</b> — most general hypothesis, covers as much as possible w/o including negatives</p>
+        </div>
+      </div>
+      <p class="arrow-note">→ true version space sits between S and G!</p>
+
+      <h2 class="sec">⚙️ Candidate Elimination Algorithm</h2>
+      <div class="flow">
+        <div class="step o1">Init S=most specific, G=most general</div><span class="arrow">→</span>
+        <div class="step o2">example is + : generalize S, trim G</div><span class="arrow">→</span>
+        <div class="step o3">example is − : specialize G, trim S</div><span class="arrow">→</span>
+        <div class="step o4">repeat till S = G (done!) or disjoint (data inconsistent)</div>
+      </div>
+
+      <h3 class="sub">quick worked example</h3>
+      <table class="hand">
+        <tr><th>#</th><th>Color</th><th>Shape</th><th>Size</th><th>Class</th></tr>
+        <tr><td>1</td><td>Red</td><td>Circle</td><td>Small</td><td>+</td></tr>
+        <tr><td>2</td><td>Green</td><td>Circle</td><td>Medium</td><td>−</td></tr>
+        <tr><td>3</td><td>Red</td><td>Triangle</td><td>Small</td><td>+</td></tr>
+      </table>
+      <p>S starts [Red,Circle,Small] → ex.2 is negative so G specializes to exclude Green/Circle/Medium → ex.3 is positive so S generalizes to [Red, ?, Small]. Keep going till S,G converge!</p>
+
+      <div class="box round">✅ pros: systematic, guarantees target concept found (if data is clean)<br>⚠️ cons: expensive for big hypothesis spaces, hates noisy data</div>
+
+      <h2 class="sec">🔢 PAC Learning — worked-through example</h2>
+      <p>Say ε = 0.1 and δ = 0.05:</p>
+      <ul>
+        <li>Accuracy required = 1 − ε = 1 − 0.1 = <b>90%</b> accurate</li>
+        <li>Confidence required = 1 − δ = 1 − 0.05 = <b>95%</b> confident</li>
+      </ul>
+      <p class="arrow-note">→ in plain English: "I want a hypothesis that's at least 90% accurate, and I want to be 95% sure I got one like that."</p>
+      <div class="sticky">smaller ε or δ = a *stricter* requirement = usually needs MORE training examples to satisfy</div>
+
+      <h2 class="sec">📏 VC Dimension — shattering example, step by step</h2>
+      <p>For a linear classifier (a line) in 2D, try to shatter 3 points:</p>
+      <ul>
+        <li>3 points → 2³ = 8 possible label combos</li>
+        <li>a line CAN separate all 8 combos → <b>shattered!</b> → VC dim ≥ 3</li>
+      </ul>
+      <p>Now try 4 points arranged e.g. in a square (XOR-style labeling):</p>
+      <ul>
+        <li>no single straight line can separate the "diagonal" labeling correctly</li>
+        <li>→ can't shatter 4 points → <b>VC dimension of a line in 2D = 3</b></li>
+      </ul>
+
+      <h2 class="sec">🧩 Version Space — finishing the worked example</h2>
+      <p>Continuing the Color/Shape/Size example from before, after all 3 training examples:</p>
+      <table class="hand">
+        <tr><th>Boundary</th><th>Value after processing</th></tr>
+        <tr><td>S (specific)</td><td>[Red, ?, Small]</td></tr>
+        <tr><td>G (general)</td><td>[Color ≠ Green, ?, ?] (refined, consistent with all examples)</td></tr>
+      </table>
+      <p class="arrow-note">→ if more examples come in and eventually S = G, that single hypothesis IS the learned target concept. If S and G ever become empty/disjoint, the training data itself is contradictory (noisy).</p>
+
+      <h2 class="sec">📝 Unit 3 Quick Recap</h2>
+      <div class="sticky">Concept learning = find h ∈ H such that h(x) = C(x) for all x</div>
+      <div class="sticky pink">PAC: P(error(h) ≤ ε) ≥ 1 − δ</div>
+      <div class="sticky green">Candidate Elimination: narrow S (specific) & G (general) until they converge</div>
+
+      <p style="text-align:center;margin-top:14px;">
+        <button class="quiz-btn" onclick="alert('Q1: In Candidate Elimination, what happens to G when a NEGATIVE example is seen?\n\nA) G is generalized\nB) G is specialized to exclude it\nC) G stays the same\n\n✅ Answer: B - G is specialized to exclude it!')">🧠 Quiz me on Unit 3!</button>
+      </p>
+
+      <h2 class="sec">🎓 Exam-Ready Definitions</h2>
+      <table class="hand">
+        <tr><th>Term</th><th>One-line definition</th></tr>
+        <tr><td>Concept Learning</td><td>Inferring a general boolean-valued function (hypothesis) from a set of training examples labeled positive/negative.</td></tr>
+        <tr><td>Hypothesis</td><td>A candidate rule/function h that maps instances to a class, tested for consistency with training data.</td></tr>
+        <tr><td>Hypothesis Space (H)</td><td>The complete set of all possible hypotheses that can describe the training data.</td></tr>
+        <tr><td>Version Space</td><td>The subset of H consistent with all training examples seen so far.</td></tr>
+        <tr><td>PAC Learning</td><td>A theoretical framework where, with probability ≥ (1−δ), the learner's hypothesis has error ≤ ε.</td></tr>
+        <tr><td>VC Dimension</td><td>The maximum number of points a hypothesis class can shatter (classify correctly in all label combinations).</td></tr>
+        <tr><td>Shattering</td><td>A set of points is shattered if the classifier can achieve every possible labeling of those points.</td></tr>
+      </table>
+
+      <h2 class="sec">⚖️ Compare & Contrast</h2>
+      <table class="hand">
+        <tr><th>Basis</th><th>Specific Boundary (S)</th><th>General Boundary (G)</th></tr>
+        <tr><td>Nature</td><td>Most specific hypothesis</td><td>Most general hypothesis</td></tr>
+        <tr><td>Covers</td><td>Only seen positive examples</td><td>As many examples as possible w/o including negatives</td></tr>
+        <tr><td>Changes on +ve example</td><td>Generalized minimally</td><td>Unchanged / inconsistent ones removed</td></tr>
+        <tr><td>Changes on −ve example</td><td>Unchanged</td><td>Specialized minimally</td></tr>
+      </table>
+      <table class="hand">
+        <tr><th>Basis</th><th>PAC Learning</th><th>VC Dimension</th></tr>
+        <tr><td>Focus</td><td>Bounds on error & confidence</td><td>Measures model capacity/complexity</td></tr>
+        <tr><td>Key symbols</td><td>ε (error), δ (failure prob)</td><td>d (largest shattered set size)</td></tr>
+        <tr><td>Tells us</td><td>How many samples needed for good accuracy</td><td>How complex a model is / overfitting risk</td></tr>
+      </table>
+
+      <h2 class="sec">📌 Candidate Elimination — Algorithm Pseudocode (write exactly like this in exam!)</h2>
+      <div class="box">
+        1. Initialize S = {most specific hypothesis in H}<br>
+        2. Initialize G = {most general hypothesis in H}<br>
+        3. For each training example d:<br>
+        &nbsp;&nbsp;If d is positive:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;Remove from G any hypothesis inconsistent with d<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;Generalize S minimally to be consistent with d<br>
+        &nbsp;&nbsp;If d is negative:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;Remove from S any hypothesis inconsistent with d<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;Specialize G minimally to be consistent with d<br>
+        4. Repeat until S = G (converged) or S, G disjoint (inconsistent data)
+      </div>
+
+      <h2 class="sec">💯 Important Exam Questions — Unit 3</h2>
+      <div class="box">
+        <b>2-mark questions:</b>
+        <ul>
+          <li>Define Concept Learning with an example.</li>
+          <li>What is a hypothesis? List its types.</li>
+          <li>Define PAC learning. What do ε and δ represent?</li>
+          <li>Define VC Dimension and Shattering.</li>
+        </ul>
+      </div>
+      <div class="box">
+        <b>5/7-mark questions:</b>
+        <ul>
+          <li>Explain the Candidate Elimination Algorithm with a suitable example (this is the MOST asked question!).</li>
+          <li>Explain PAC Learning framework with formula and example.</li>
+          <li>Explain VC Dimension with examples for different models.</li>
+          <li>Explain Hypothesis Space and Version Space with S and G boundaries.</li>
+          <li>Explain advantages, limitations & applications of Concept Learning.</li>
+          <li>Differentiate between Specific Boundary and General Boundary.</li>
+        </ul>
+      </div>
+
+      <h2 class="sec">🧠 Mnemonic to remember Candidate Elimination steps</h2>
+      <div class="sticky pink">"<b>P</b>ositive <b>G</b>rows <b>S</b>pecific, <b>N</b>egative <b>S</b>hrinks <b>G</b>eneral" — remember: +ve example generalizes S & trims G; −ve example specializes G & trims S</div>
+      <div class="sticky">PAC formula to memorize: P(error(h) ≤ ε) ≥ 1 − δ</div>
+
+    </section>
+
+  </div><!-- /notebook -->
+
+  <footer class="note">made with ☕ + late-night studying — good luck on the exam!</footer>
+</div>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const pages = document.querySelectorAll('.page');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const unit = tab.getAttribute('data-unit');
+      tabs.forEach(t => t.classList.remove('active'));
+      pages.forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('page-' + unit).classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
